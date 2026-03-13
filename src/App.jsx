@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import "./App.css";
 import NavBar from "./components/NavBar";
@@ -58,9 +58,44 @@ const tempWatchedData = [
   },
 ];
 
+let KEY = "a6347122";
+let query = "satantango";
+let URL = `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`;
+
 export default function App() {
-  const [movies, setMovies] = useState(tempMovieData);
+  const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState(tempWatchedData);
+  const [isLoad, setIsLoad] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function getMovies() {
+      setIsLoad(true);
+
+      try {
+        const res = await fetch(URL);
+
+        if (!res.ok) {
+          throw new Error("Somthing went wrong");
+        }
+
+        const data = await res.json();
+
+        if (data.Response === "False") {
+          throw new Error("Movie not found");
+        }
+
+        setMovies(data.Search);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setIsLoad(false);
+      }
+    }
+
+    getMovies();
+  }, []);
+
   return (
     <>
       <NavBar>
@@ -70,7 +105,9 @@ export default function App() {
       </NavBar>
       <Main>
         <Box>
-          <MovieList movies={movies} />
+          {isLoad && <Load />}
+          {error && <ErrorMessage message={error} />}
+          {!isLoad && !error && <MovieList movies={movies} />}
         </Box>
 
         <Box>
@@ -79,5 +116,17 @@ export default function App() {
         </Box>
       </Main>
     </>
+  );
+}
+
+function Load() {
+  return <p className="loader"> Loading... </p>;
+}
+
+function ErrorMessage({ message }) {
+  return (
+    <p className="error">
+      <span> ⛔</span> {message}
+    </p>
   );
 }
