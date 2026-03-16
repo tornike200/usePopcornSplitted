@@ -59,21 +59,29 @@ const tempWatchedData = [
 ];
 
 let KEY = "a6347122";
-let query = "satantango";
-let URL = `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`;
+// let query = "titanic";
+let URL = `http://www.omdbapi.com/?apikey=${KEY}&s=`;
 
 export default function App() {
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState(tempWatchedData);
   const [isLoad, setIsLoad] = useState(false);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [selectedId, setSelectedId] = useState(null);
+
+  function HandleSelect(id) {
+    setSelectedId(id);
+  }
+
+  console.log(selectedId);
 
   useEffect(() => {
     async function getMovies() {
       setIsLoad(true);
 
       try {
-        const res = await fetch(URL);
+        const res = await fetch(URL + query);
 
         if (!res.ok) {
           throw new Error("Somthing went wrong");
@@ -91,28 +99,42 @@ export default function App() {
       } finally {
         setIsLoad(false);
       }
+
+      if (query.length < 3) {
+        setError("");
+        setMovies([]);
+        return;
+      }
     }
 
     getMovies();
-  }, []);
+  }, [query]);
+
+  console.log(movies);
 
   return (
     <>
       <NavBar>
         <Logo />
-        <Search />
+        <Search query={query} setQuery={setQuery} />
         <NumResult watched={watched} />
       </NavBar>
       <Main>
         <Box>
           {isLoad && <Load />}
           {error && <ErrorMessage message={error} />}
-          {!isLoad && !error && <MovieList movies={movies} />}
+          {!isLoad && !error && <MovieList movies={movies} onSelect={HandleSelect} />}
         </Box>
 
         <Box>
-          <WatchedSummary watched={watched} />
-          <WatchedMoviesList watched={watched} />
+          {selectedId ? (
+            <MovieDetails selectedId={selectedId} />
+          ) : (
+            <>
+              <WatchedSummary watched={watched} />
+              <WatchedMoviesList watched={watched} />
+            </>
+          )}
         </Box>
       </Main>
     </>
@@ -129,4 +151,8 @@ function ErrorMessage({ message }) {
       <span> ⛔</span> {message}
     </p>
   );
+}
+
+function MovieDetails({ selectedId }) {
+  return <h2>{selectedId}</h2>;
 }
